@@ -1,11 +1,11 @@
 [project]
 name = "sirtep"
-version = "0.1.0"
+version = "0.0.1"
 license = "BSD-3-Clause"
-package-mode = false
-description = ""
+package-mode = true
+description = "Sirtep is a tiny library for running scheduler optimization within urban construction."
 authors = [
-    {name = "Leon",email = "turkov.leon-2@yandex.ru"}
+    {name = "LeonDeTur",email = "turkov.leon-2@yandex.ru"}
 ]
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,6 +18,8 @@ tqdm = "^4.66.2"
 loguru = "^0.7.3"
 cvxpy = "^1.7.0"
 highspy = "^1.11.0"
+pyproj = "<=3.7.1"
+matplotlib = "^3.10.5"
 
 [tool.poetry.group.dev.dependencies]
 pyarrow = "^19.0.1"

@@ -4,7 +4,7 @@ import pandas as pd
 import geopandas as gpd
 
 
-def optimize_building_schedule(
+def optimize_provision_building_schedule(
         houses: pd.DataFrame | gpd.GeoDataFrame,
         services: pd.DataFrame | gpd.GeoDataFrame,
         access_matrix: pd.DataFrame,
@@ -40,7 +40,6 @@ def optimize_building_schedule(
             - provided_per_period: Array with the total population served in each period.
             -periods: Array with the period numbers.
     """
-
 
     def _get_construction_periods(val_matrix, ids, threshold):
         periods = pd.Series(index=ids, dtype="Int64")
@@ -109,7 +108,7 @@ def optimize_building_schedule(
     house_construction_period = _get_construction_periods(x_val, house_ids, ready_threshold)
     service_construction_period = _get_construction_periods(y_val, service_ids, ready_threshold)
 
-    periods = np.arange(1, num_periods+1)
+    periods = np.arange(1, num_periods + 1)
     houses_per_period = np.sum(x_val, axis=0)
     services_per_period = np.sum(y_val, axis=0)
     houses_area_per_period = np.sum(x_val * house_objects.values[:, None], axis=0)
@@ -142,3 +141,51 @@ def optimize_building_schedule(
         "provided_per_period": np.array(provided_per_period),
         "periods": periods
     }
+
+
+def optimize_building_schedule(
+        objects: pd.DataFrame | gpd.GeoDataFrame,
+        max_periods: int = 40,
+        max_speed_per_period: int = 10000
+) -> pd.DataFrame:
+    """
+    Function optimizes building schedule based on priority.
+    Args:
+        objects (pd.DataFrame | gpd.GeoDataFrame): objects to construct. Should contain following columns:
+        - area: object area in square metres
+        - priority: non-unique priorities to build object on
+        max_periods (int): maximum number of periods to build
+        max_speed_per_period (int): maximum speed of building per period
+    Returns:
+         pd.DataFrame: optimized building schedule
+    """
+
+    areas = objects["area"].to_numpy()
+    priorities = objects["priority"].to_numpy()
+    names = objects.index.astype(str)
+    n = len(objects)
+
+    x = cp.Variable((n, max_periods), nonneg=True)
+
+    score = priorities / areas
+    objective = cp.Maximize(cp.sum(cp.multiply(x, score[:, None])))
+
+    constraints = [cp.sum(x[i, :]) <= 1 for i in range(n)]
+    for p in range(max_periods):
+        constraints.append(cp.sum(cp.multiply(x[:, p], areas)) <= max_speed_per_period)
+
+    problem = cp.Problem(objective, constraints)
+    problem.solve(solver=cp.HIGHS)
+
+    if x.value is None or np.isnan(x.value).any():
+        raise RuntimeError(f"Оптимизация не решена, статус: {problem.status}")
+
+    result = []
+    for i, name in enumerate(names):
+        for p in range(max_periods):
+            percent = x.value[i, p]
+            if percent > 1e-4:
+                result.append({"name": name, "period": p + 1, "percent_built": percent, "area": areas[i],
+                               "priority": priorities[i]})
+    schedule_df = pd.DataFrame(result)
+    return schedule_df
