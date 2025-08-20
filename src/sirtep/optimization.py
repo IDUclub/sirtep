@@ -1,7 +1,11 @@
+"""This module contains functions for optimizing building schedules in a settlement."""
+
 import cvxpy as cp
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+
+from .sirtep_dataclasses import ProvisionSchedulerDataClass
 
 
 def optimize_provision_building_schedule(
@@ -12,7 +16,7 @@ def optimize_provision_building_schedule(
         num_periods: int = 40,
         ready_threshold: float = 0.99,
         verbose: bool = True
-) -> dict:
+) -> ProvisionSchedulerDataClass:
     """
     Function optimizes the building schedule for houses and services in a settlement.
 
@@ -23,12 +27,12 @@ def optimize_provision_building_schedule(
         must contain 'service_area', 'capacity', and 'weight' columns.
         access_matrix (pd.DataFrame): DataFrame indicating access to services for each house,
         with houses as rows and services as columns.
-        max_area_per_period (int): Maximum area that can be built in one period.
+        max_area_per_period (int): Maximum area that can be built in one period in square metres.
         num_periods (int): Number of periods for the optimization.
         ready_threshold (float): Threshold for considering a house or service as ready.
         verbose (bool): Whether to print optimization details.
     Returns:
-        dict: Dictionary with optimization results, including:
+        ProvisionSchedulerDataClass: Dataclass with optimization results, including:
             - x_val: Matrix of houses built in each period.
             - y_val: Matrix of services built in each period.
             - house_construction_period: Series with construction periods for each house.
@@ -58,9 +62,8 @@ def optimize_provision_building_schedule(
 
     n_houses = len(house_objects)
     n_services = len(service_objects)
-
-    x = cp.Variable((n_houses, num_periods))  # дома
-    y = cp.Variable((n_services, num_periods))  # сервисы
+    x = cp.Variable((n_houses, num_periods))
+    y = cp.Variable((n_services, num_periods))
 
     constraints = [
         x >= 0, x <= 1,
@@ -129,18 +132,9 @@ def optimize_provision_building_schedule(
             provided_per_house_p.append(min(pop_in_house, service_place))
         provided_per_period.append(np.sum(provided_per_house_p))
 
-    return {
-        "x_val": x_val,
-        "y_val": y_val,
-        "house_construction_period": house_construction_period,
-        "service_construction_period": service_construction_period,
-        "houses_per_period": houses_per_period,
-        "services_per_period": services_per_period,
-        "houses_area_per_period": houses_area_per_period,
-        "services_area_per_period": services_area_per_period,
-        "provided_per_period": np.array(provided_per_period),
-        "periods": periods
-    }
+    return ProvisionSchedulerDataClass(x_val, y_val, house_construction_period, service_construction_period,
+                                       houses_per_period, services_per_period, houses_area_per_period,
+                                       services_area_per_period, provided_per_period, periods)
 
 
 def optimize_building_schedule(

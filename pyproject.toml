@@ -1,6 +1,6 @@
 [project]
 name = "sirtep"
-version = "0.0.1"
+version = "0.1.0"
 license = "BSD-3-Clause"
 package-mode = true
 description = "Sirtep is a tiny library for running scheduler optimization within urban construction."
@@ -33,11 +33,6 @@ pre-commit = "^4.2.0"
 folium = "^0.19.5"
 matplotlib = "^3.10.1"
 mapclassify = "^2.8.1"
-mkdocs = "^1.6.1"
-mkdocstrings = {extras = ["python"], version = "^0.29.1"}
-mkdocs-material = "^9.6.14"
-mike = "^2.1.3"
-imageio = "^2.37.0"
 
 [build-system]
 requires = ["poetry-core"]
