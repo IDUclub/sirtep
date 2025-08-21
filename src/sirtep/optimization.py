@@ -1,21 +1,21 @@
 """This module contains functions for optimizing building schedules in a settlement."""
 
 import cvxpy as cp
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
 
 from .sirtep_dataclasses import ProvisionSchedulerDataClass
 
 
 def optimize_provision_building_schedule(
-        houses: pd.DataFrame | gpd.GeoDataFrame,
-        services: pd.DataFrame | gpd.GeoDataFrame,
-        access_matrix: pd.DataFrame,
-        max_area_per_period: int = 100000,
-        num_periods: int = 40,
-        ready_threshold: float = 0.99,
-        verbose: bool = True
+    houses: pd.DataFrame,
+    services: pd.DataFrame,
+    access_matrix: pd.DataFrame,
+    max_area_per_period: int = 100000,
+    num_periods: int = 40,
+    ready_threshold: float = 0.99,
+    verbose: bool = True,
 ) -> ProvisionSchedulerDataClass:
     """
     Function optimizes the building schedule for houses and services in a settlement.
@@ -66,15 +66,17 @@ def optimize_provision_building_schedule(
     y = cp.Variable((n_services, num_periods))
 
     constraints = [
-        x >= 0, x <= 1,
-        y >= 0, y <= 1,
+        x >= 0,
+        x <= 1,
+        y >= 0,
+        y <= 1,
         cp.sum(x, axis=1) <= 1,
         cp.sum(y, axis=1) <= 1,
     ]
     for p in range(num_periods):
         constraints.append(
-            cp.sum(cp.multiply(x[:, p], house_objects.values)) +
-            cp.sum(cp.multiply(y[:, p], service_objects.values)) <= max_area_per_period
+            cp.sum(cp.multiply(x[:, p], house_objects.values)) + cp.sum(cp.multiply(y[:, p], service_objects.values))
+            <= max_area_per_period
         )
 
     x_total = cp.sum(x, axis=1)
@@ -132,15 +134,22 @@ def optimize_provision_building_schedule(
             provided_per_house_p.append(min(pop_in_house, service_place))
         provided_per_period.append(np.sum(provided_per_house_p))
 
-    return ProvisionSchedulerDataClass(x_val, y_val, house_construction_period, service_construction_period,
-                                       houses_per_period, services_per_period, houses_area_per_period,
-                                       services_area_per_period, provided_per_period, periods)
+    return ProvisionSchedulerDataClass(
+        x_val,
+        y_val,
+        house_construction_period,
+        service_construction_period,
+        houses_per_period,
+        services_per_period,
+        houses_area_per_period,
+        services_area_per_period,
+        provided_per_period,
+        periods,
+    )
 
 
 def optimize_building_schedule(
-        objects: pd.DataFrame | gpd.GeoDataFrame,
-        max_periods: int = 40,
-        max_speed_per_period: int = 10000
+    objects: pd.DataFrame, max_periods: int = 40, max_speed_per_period: int = 10000
 ) -> pd.DataFrame:
     """
     Function optimizes building schedule based on priority.
@@ -171,15 +180,22 @@ def optimize_building_schedule(
     problem = cp.Problem(objective, constraints)
     problem.solve(solver=cp.HIGHS)
 
-    if x.value is None or np.isnan(x.value).any():
-        raise RuntimeError(f"Оптимизация не решена, статус: {problem.status}")
+    if problem.status != cp.OPTIMAL:
+        raise RuntimeError(f"Optimization failed, problem status: {problem.status}")
 
     result = []
     for i, name in enumerate(names):
         for p in range(max_periods):
             percent = x.value[i, p]
             if percent > 1e-4:
-                result.append({"name": name, "period": p + 1, "percent_built": percent, "area": areas[i],
-                               "priority": priorities[i]})
+                result.append(
+                    {
+                        "name": name,
+                        "period": p + 1,
+                        "percent_built": percent,
+                        "area": areas[i],
+                        "priority": priorities[i],
+                    }
+                )
     schedule_df = pd.DataFrame(result)
     return schedule_df
