@@ -1,6 +1,6 @@
 [project]
 name = "sirtep"
-version = "0.1.0"
+version = "0.1.1"
 description = "Tiny library for construction scheduling based on spatial data with additional attributes."
 readme = "README.md"
 license = { text = "BSD-3-Clause" }

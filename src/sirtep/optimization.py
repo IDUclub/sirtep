@@ -149,7 +149,7 @@ def optimize_provision_building_schedule(
 
 
 def optimize_building_schedule(
-    objects: pd.DataFrame, max_periods: int = 40, max_speed_per_period: int = 10000
+    objects: pd.DataFrame, max_periods: int = 40, max_speed_per_period: int = 10000, verbose: bool = False
 ) -> pd.DataFrame:
     """
     Function optimizes building schedule based on priority.
@@ -159,6 +159,7 @@ def optimize_building_schedule(
         - priority: non-unique priorities to build object on
         max_periods (int): maximum number of periods to build
         max_speed_per_period (int): maximum speed of building per period
+        verbose (bool): whether to print optimization details
     Returns:
          pd.DataFrame: optimized building schedule
     """
@@ -178,7 +179,7 @@ def optimize_building_schedule(
         constraints.append(cp.sum(cp.multiply(x[:, p], areas)) <= max_speed_per_period)
 
     problem = cp.Problem(objective, constraints)
-    problem.solve(solver=cp.HIGHS)
+    problem.solve(solver=cp.HIGHS, verbose=verbose)
 
     if problem.status != cp.OPTIMAL:
         raise RuntimeError(f"Optimization failed, problem status: {problem.status}")
