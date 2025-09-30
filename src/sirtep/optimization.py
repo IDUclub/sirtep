@@ -24,7 +24,7 @@ def optimize_provision_building_schedule(
         houses (pd.DataFrame | gpd.GeoDataFrame): DataFrame with houses,
         must contain 'living_area' and 'population' columns.
         services (pd.DataFrame | gpd.GeoDataFrame): DataFrame with services,
-        must contain 'service_area', 'capacity', and 'weight' columns.
+        must contain 'service_area', 'capacity', 'weight' and 'physical_object_id' columns.
         access_matrix (pd.DataFrame): DataFrame indicating access to services for each house,
         with houses as rows and services as columns.
         max_area_per_period (int): Maximum area that can be built in one period in square metres.
@@ -83,6 +83,13 @@ def optimize_provision_building_schedule(
     y_total = cp.sum(y, axis=1)
     house_id_to_idx = {hid: i for i, hid in enumerate(house_ids)}
     service_id_to_idx = {sid: j for j, sid in enumerate(service_ids)}
+
+    for sid in service_ids:
+        building_id = services.loc[sid, "physical_object_id"]
+        if pd.notna(building_id):
+            i = house_id_to_idx[building_id]
+            j = service_id_to_idx[sid]
+            constraints.append(cp.sum(y[j, :]) <= cp.sum(x[i, :]))
 
     population_ready = [cp.multiply(x_total[house_id_to_idx[hid]], population.loc[hid]) for hid in house_ids]
     service_capacity_ready = [cp.multiply(y_total[service_id_to_idx[sid]], capacity.loc[sid]) for sid in service_ids]
