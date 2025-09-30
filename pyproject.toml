@@ -1,6 +1,6 @@
 [project]
 name = "sirtep"
-version = "0.1.1"
+version = "0.2.0"
 description = "Tiny library for construction scheduling based on spatial data with additional attributes."
 readme = "README.md"
 license = { text = "BSD-3-Clause" }
@@ -14,6 +14,7 @@ dependencies = [
     "tqdm>=4.66.2",
     "loguru>=0.7.3",
     "cvxpy>=1.7.0",
+    "highspy>=1.11.0",
 ]
 
 [tool.poetry.group.dev.dependencies]
