@@ -89,7 +89,8 @@ def optimize_provision_building_schedule(
         if pd.notna(building_id):
             i = house_id_to_idx[building_id]
             j = service_id_to_idx[sid]
-            constraints.append(cp.sum(y[j, :]) <= cp.sum(x[i, :]))
+            for t in range(num_periods):
+                constraints.append(cp.sum(y[j, :t + 1]) <= cp.sum(x[i, :t + 1]))
 
     population_ready = [cp.multiply(x_total[house_id_to_idx[hid]], population.loc[hid]) for hid in house_ids]
     service_capacity_ready = [cp.multiply(y_total[service_id_to_idx[sid]], capacity.loc[sid]) for sid in service_ids]
